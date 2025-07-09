@@ -192,6 +192,17 @@ TABLE_INDEXES = {
     ],
 }
 
+TABLE_SHARDING_KEYS = {
+    constants.TABLENAME_ITEM: {"I_W_ID": 1, "I_ID": 1},
+    constants.TABLENAME_WAREHOUSE: {"W_ID": 1, "W_TAX": 1},
+    constants.TABLENAME_DISTRICT: {"D_W_ID": 1, "D_ID": 1, "D_NEXT_O_ID": 1, "D_TAX": 1},
+    constants.TABLENAME_CUSTOMER: {"C_W_ID": 1, "C_D_ID": 1, "C_ID": 1},
+    constants.TABLENAME_STOCK: {"S_W_ID": 1, "S_I_ID": 1, "S_QUANTITY": 1},
+    constants.TABLENAME_ORDERS: {"O_W_ID": 1, "O_D_ID": 1, "O_ID": 1, "O_C_ID": 1},
+    constants.TABLENAME_NEW_ORDER: {"NO_W_ID": 1, "NO_D_ID": 1, "NO_O_ID": 1},
+    constants.TABLENAME_ORDER_LINE: {"OL_O_ID":1 , "OL_D_ID": 1, "OL_W_ID": 1, "OL_NUMBER": 1},
+}
+
 ## ==============================================
 ## MongodbDriver
 ## ==============================================
@@ -314,6 +325,11 @@ class MongodbDriver(AbstractDriver):
 
         # set default writeConcern on the database
         self.database = self.client.get_database(name=str(config['name']), write_concern=self.write_concern)
+
+        admindb = self.client.get_database("admin")
+        if self.client.is_mongos:
+            admindb.command("enableSharding", self.database.name)
+
         if self.denormalize:
             logging.debug("Using denormalized data model")
 
@@ -340,6 +356,11 @@ class MongodbDriver(AbstractDriver):
                         self.database[name].create_index(index, unique=uniq)
                         uniq = False
                 ## IF
+                sharding_key = TABLE_SHARDING_KEYS[name]
+                if self.client.is_mongos:
+                    admindb.command("shardCollection",
+                                    self.database.name + '.' + name,
+                                    key=sharding_key)
             ## FOR
         except pymongo.errors.OperationFailure as exc:
             logging.error("OperationFailure %d (%s) when connected to %s: ",
