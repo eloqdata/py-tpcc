@@ -351,7 +351,11 @@ class MongodbDriver(AbstractDriver):
                     continue
                 self.__dict__[name.lower()] = self.database[name]
                 if load_indexes and name in TABLE_INDEXES:
-                    uniq = True
+                    # Insert into unique index is not well-optimized in EloqDoc.
+                    # And EloqDoc doesn't support creating unique index on existing collection.
+                    #
+                    # uniq = True
+                    uniq = False
                     for index in TABLE_INDEXES[name]:
                         self.database[name].create_index(index, unique=uniq)
                         uniq = False
