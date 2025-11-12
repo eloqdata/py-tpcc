@@ -442,7 +442,18 @@ class MongodbDriver(AbstractDriver):
             for t in tuples:
                 tuple_dicts.append(dict([(columns[i], t[i]) for i in num_columns]))
             ## FOR
-            self.database[tableName].insert_many(tuple_dicts)
+            while True:
+                try:
+                    self.database[tableName].insert_many(tuple_dicts)
+                    break
+                except pymongo.errors.OperationFailure as exc:
+                    if exc.has_error_label("TransientTransactionError"):
+                        print("retry insert_many %s", tableName)
+                        sleep(0.1)
+                        continue
+                    else:
+                        print("Failed with unknown OperationFailure: %d" % exc.code)
+                        raise
         ## IF
 
         return
@@ -450,7 +461,18 @@ class MongodbDriver(AbstractDriver):
     def loadFinishDistrict(self, w_id, d_id):
         if self.denormalize:
             logging.debug("Pushing %d denormalized ORDERS records for WAREHOUSE %d DISTRICT %d into MongoDB", len(self.w_orders), w_id, d_id)
-            self.database[constants.TABLENAME_ORDERS].insert_many(self.w_orders.values())
+            while True:
+                try:
+                    self.database[constants.TABLENAME_ORDERS].insert_many(self.w_orders.values())
+                    break
+                except pymongo.errors.OperationFailure as exc:
+                    if exc.has_error_label("TransientTransactionError"):
+                        print("retry insert_many %s", constants.TABLENAME_ORDERS)
+                        sleep(0.1)
+                        continue
+                    else:
+                        print("Failed with unknown OperationFailure: %d" % exc.code)
+                        raise
             self.w_orders.clear()
         ## IF
 
