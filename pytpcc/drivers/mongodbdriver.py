@@ -447,13 +447,9 @@ class MongodbDriver(AbstractDriver):
                     self.database[tableName].insert_many(tuple_dicts)
                     break
                 except pymongo.errors.OperationFailure as exc:
-                    if exc.has_error_label("TransientTransactionError"):
-                        print("retry insert_many %s", tableName)
+                        logging.WARNING("retry insert_many %s", tableName)
                         sleep(0.1)
                         continue
-                    else:
-                        print("Failed with unknown OperationFailure: %d" % exc.code)
-                        raise
         ## IF
 
         return
@@ -466,13 +462,9 @@ class MongodbDriver(AbstractDriver):
                     self.database[constants.TABLENAME_ORDERS].insert_many(self.w_orders.values())
                     break
                 except pymongo.errors.OperationFailure as exc:
-                    if exc.has_error_label("TransientTransactionError"):
-                        print("retry insert_many %s", constants.TABLENAME_ORDERS)
+                        logging.warning("retry insert_many %s", constants.TABLENAME_ORDERS)
                         sleep(0.1)
                         continue
-                    else:
-                        print("Failed with unknown OperationFailure: %d" % exc.code)
-                        raise
             self.w_orders.clear()
         ## IF
 
