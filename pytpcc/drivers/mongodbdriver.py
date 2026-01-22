@@ -447,7 +447,7 @@ class MongodbDriver(AbstractDriver):
                     self.database[tableName].insert_many(tuple_dicts)
                     break
                 except pymongo.errors.OperationFailure as exc:
-                        logging.WARNING("retry insert_many %s", tableName)
+                        logging.warning("retry insert_many %s", tableName)
                         sleep(0.1)
                         continue
         ## IF
